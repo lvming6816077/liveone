@@ -13,23 +13,27 @@
   <div class="room">
     <div class="avatar-wave-top">
       <div class="ripple-wave">
-        <div class="ripple-wave-2"></div>
+        <div class="ripple-wave-2">
+			<img class="avatar" :src="'./assets/avatar'+avatar" />
+		</div>
       </div>
       <div class="person-one">{{name}}</div>
     </div>
-    <div class="avatar-wave-bottom">
+    <div class="avatar-wave-bottom" v-if="others">
       <div class="ripple-wave">
-        <div class="ripple-wave-2"></div>
+        <div class="ripple-wave-2">
+			<img class="avatar" :src="'./assets/avatar'+avatar" />
+		</div>
       </div>
       <div class="person-one">{{others}}</div>
     </div>
-  	<div class="call bubbly-button" @click="makeCall">订单</div>
+  	<div class="call bubbly-button" @click="makeCall">connect</div>
   </div>
 </template>
 
 <script>
 // import HelloWorld from './components/HelloWorld.vue'
-
+// import nickname from 'nickname'
 export default {
   name: 'App', 
   components: {
@@ -37,8 +41,9 @@ export default {
   },
   data(){
   	return {
-  		name:'tenny'+Date.now(),
-  		others:'',
+  		name:Date.now(),
+		others:'',
+		avatar:Math.ceil(Math.random() * 9 )+'.jpg',
   		state:'init',
   		room: "person2",
   		showVideo: false,
@@ -56,10 +61,12 @@ export default {
   	}
   },
   mounted(){
-  	// debugger
-  	
-  	//window.location.origin
-  	this.socket = io.connect('http://localhost:3003/',{
+	let url = window.location.origin
+	if (process.env.NODE_ENV == 'development') {
+		url = 'http://localhost:3003/'
+	}
+
+  	this.socket = io.connect(url,{
   	  path:'/rtcket'
   	});
 
@@ -326,7 +333,7 @@ export default {
 		height: 100%;
 		background-color: #fff;
 		position: absolute;
-
+		z-index: 999;
 	}
 	.video-content.animated {
 		animation-duration: 0.4s;
@@ -391,7 +398,7 @@ export default {
     justify-content: center;
   }
   .person-one {
-    margin-top: 15px;
+    margin-top: 20px;
     color: #fff;
   }
   @keyframes pulse-animation {
@@ -418,8 +425,21 @@ export default {
     bottom: 0;
     top: 0;
     background-color: rgb(33, 26, 37);
+	display: flex;
+	justify-content: center;
+	align-items: center;
   }
-
+  .avatar {
+    display: block;
+    width: 89px;
+    height: 89px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 99;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
   .ripple-wave {
     position: relative;
     border-radius: 50%;
@@ -458,13 +478,14 @@ export default {
     animation-delay: 0.24s;
   }
   .bubbly-button {
-    position: absolute;
-
+    width: 70px;
+	height: 34px;
+	text-align: center;
+	line-height: 34px;
+	
   }
   .bubbly-button {
     display: inline-block;
-    font-size: 1em;
-    padding: 1em 2em;
     -webkit-appearance: none;
     appearance: none;
     background-color: #ff0081;

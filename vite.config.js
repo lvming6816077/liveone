@@ -1,6 +1,9 @@
 module.exports = {
 
   base: './',　
-  assetsDir:'./'
+  assetsDir:'./',
+  rollupInputOptions:{
+    // external: ['@jswork/next-random-nickname']
+  }
 
 }
