@@ -1,6 +1,15 @@
 <template>
   <transition class="animated zoomIn">
      <div class="video-content" ref="videoContent" v-show="showVideo">
+      <div class="avatar-wave-jieting" v-if="showJieting && othersInfo">
+        <!-- <h3>来电</h3> -->
+        <div class="ripple-wave">
+          <div class="ripple-wave-2">
+        <img class="avatar" :src="'//app.nihaoshijie.com.cn/upload/avatar/avatar'+othersInfo.avatar" />
+      </div>
+        </div>
+        <div class="person-one">{{othersInfo.name}}</div>
+      </div>
      	<video v-show="localStream" class="localvideo" ref="localvideo" autoplay playsinline muted></video>
      	<video v-show="remoteStream" class="remotevideo" ref="remotevideo" autoplay playsinline></video>
        <div class="tools">
@@ -14,20 +23,20 @@
     <div class="avatar-wave-top">
       <div class="ripple-wave">
         <div class="ripple-wave-2">
-			<img class="avatar" :src="'./assets/avatar'+avatar" />
+			<img class="avatar" :src="'//app.nihaoshijie.com.cn/upload/avatar/avatar'+info.avatar" />
 		</div>
       </div>
-      <div class="person-one">{{name}}</div>
+      <div class="person-one">{{info.name}}</div>
     </div>
-    <div class="avatar-wave-bottom" v-if="others">
+    <div class="avatar-wave-bottom" v-if="othersInfo">
       <div class="ripple-wave">
         <div class="ripple-wave-2">
-			<img class="avatar" :src="'./assets/avatar'+avatar" />
+			<img class="avatar" :src="'//app.nihaoshijie.com.cn/upload/avatar/avatar'+othersInfo.avatar" />
 		</div>
       </div>
-      <div class="person-one">{{others}}</div>
+      <div class="person-one">{{othersInfo.name}}</div>
     </div>
-  	<div class="call bubbly-button" @click="makeCall">connect</div>
+  	<div :class="['call', 'bubbly-button',othersInfo ? '':'disabled']" @click="makeCall">connect</div>
   </div>
 </template>
 
@@ -41,9 +50,11 @@ export default {
   },
   data(){
   	return {
-  		name:Date.now(),
-		others:'',
-		avatar:Math.ceil(Math.random() * 9 )+'.jpg',
+      info:{
+        name: Date.now(),
+        avatar: Math.ceil(Math.random() * 9 )+'.jpg',
+      },
+		  othersInfo:'',
   		state:'init',
   		room: "person2",
   		showVideo: false,
@@ -72,7 +83,7 @@ export default {
 
   	this.socket.emit('join', {
   		room: this.room,
-  		name:this.name
+  		info:this.info
   	});
 
   	this.localVideo = this.$refs.localvideo
@@ -116,9 +127,9 @@ export default {
   			for (var key in r) {
   				if (r[key]) {
   					if (key == id) {
-  						this.name = r[key].name
+  						this.info = r[key].info
   					} else {
-  						this.others = r[key].name
+  						this.othersInfo = r[key].info
   					}
   				}
 
@@ -130,11 +141,11 @@ export default {
   		});
 
   		this.socket.on('otherjoin', (r) => {
-  			this.others = r.name
+  			this.othersInfo = r.info
   		  // console.log('receive joined message:', roomid, state);
   		});
   		this.socket.on('otherleave', (r) => {
-  			this.others = ''
+  			this.othersInfo = ''
   		  // console.log('receive joined message:', roomid, state);
   		});
 
@@ -155,12 +166,17 @@ export default {
       e.target.classList.remove('animate');
       
       e.target.classList.add('animate');
-      setTimeout(function(){
-        e.target.classList.remove('animate');
-      },700);
+
+
+      return new Promise((resolve)=>{
+        setTimeout(function(){
+          e.target.classList.remove('animate');
+          resolve()
+        },900);
+      })
     },
   	async makeCall(e){
-      this.animateButton(e)
+      await this.animateButton(e)
   		this.state = 'call'
   		this.showVideo = true;
   		this.showGuaduan = true;
@@ -331,7 +347,7 @@ export default {
 	.video-content {
 		width: 100%;
 		height: 100%;
-		background-color: #fff;
+		background-color: rgb(33, 26, 37);
 		position: absolute;
 		z-index: 999;
 	}
@@ -342,9 +358,9 @@ export default {
 		width: 100%;
 		height: 70px;
 		position: absolute;
-		bottom: 0;
+		bottom: 40px;
 		display: flex;
-		justify-content: space-evenly;
+		justify-content: center;
 		z-index: 10
 	}
 	.tools-icon {
@@ -352,7 +368,11 @@ export default {
 		height: 50px;
 		background-size: 100% 100%;
 		background-repeat: no-repeat;
+    
 	}
+  .tools-icon:first-child {
+    margin-right: 20px;
+  }
 	.jinyan {
 		background-image: url('./assets/jinyan.svg');
 
@@ -375,6 +395,17 @@ export default {
 		bottom: 0;
 		z-index: 9;
 	}
+  .avatar-wave-jieting {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 167px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
   .avatar-wave-top {
     position: absolute;
     width: 200px;
@@ -448,6 +479,9 @@ export default {
     width: 100px;
     height: 100px;
   }
+  .avatar-wave-jieting .ripple-wave::before,.avatar-wave-jieting .ripple-wave::after {
+    background-color: #1aad19;
+  }
   .ripple-wave::before, .ripple-wave::after {
     content: "";
     display: block;
@@ -455,7 +489,7 @@ export default {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background-color: white;
+    background-color: #fff;
     will-change: transform, opacity;
   }
   .ripple-wave::after {
@@ -467,13 +501,16 @@ export default {
     height: inherit;
     width: inherit;
   }
+  .avatar-wave-jieting .ripple-wave .ripple-wave-2::before {
+    background-color: #1aad19;
+  }
   .ripple-wave .ripple-wave-2::before {
     content: "";
     display: block;
     height: inherit;
     width: inherit;
     border-radius: 50%;
-    background-color: white;
+    background-color: #fff;
     animation: pulse-animation 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
     animation-delay: 0.24s;
   }
@@ -483,6 +520,10 @@ export default {
 	text-align: center;
 	line-height: 34px;
 	
+  }
+  .bubbly-button.disabled {
+    background-color: #ccc;
+    box-shadow: none;
   }
   .bubbly-button {
     display: inline-block;

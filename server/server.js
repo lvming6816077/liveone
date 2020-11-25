@@ -13,8 +13,8 @@ var serveIndex = require('serve-index');
 var app = express();
 
 
-app.use(serveIndex('./public'));
-app.use(express.static('./public'));
+app.use(serveIndex('./dist'));
+app.use(express.static('./dist'));
 
 
 
