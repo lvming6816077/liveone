@@ -42,8 +42,7 @@ io.on('connection', (socket)=>{
 		if(data ===  undefined){
 			return;
 		}
-		socket.to(room).emit('message', room, socket.id, data)//房间内所有人,除自己外
-		
+		socket.to(room).emit('message', room, socket.id, data)
 		
 	});
 
@@ -58,25 +57,16 @@ io.on('connection', (socket)=>{
 		var myRoom = io.sockets.adapter.rooms[room];
 		var users = Object.keys(myRoom.sockets).length;
 
-
-
-		//在这里可以控制进入房间的人数,现在一个房间最多 2个人
-		//为了便于客户端控制，如果是多人的话，应该将目前房间里
-		//人的个数当做数据下发下去。
 		if(users < 3) {
 			console.log(obj)
 			
-			
-
 			socket.emit('joined', personListMap, socket.id);
-			socket.to(room).emit('otherjoin', obj)//房间内所有人,除自己外
-			/*
-			if (users > 1) {
-				socket.to(room).emit('otherjoin', room);//除自己之外
-			}*/
+			socket.to(room).emit('otherjoin', obj)
+
 		}else {
+			personListMap[socket.id] = null
 			socket.leave(room);
-			socket.emit('full', room, socket.id);	
+			socket.emit('full', room, personListMap);	
 		}
 
 	});
@@ -87,15 +77,15 @@ io.on('connection', (socket)=>{
 		var myRoom = io.sockets.adapter.rooms[room];
 
 		
-
+		personListMap[socket.id] = null
 		socket.leave(room);
-		socket.to(room).emit('bye', room, socket.id)//房间内所有人,除自己外
+		socket.to(room).emit('bye', room, socket.id)
 	 	socket.emit('leaved', room, socket.id);	
 	});
 
 	socket.on('disconnect', function () {
 		
-		socket.to(roomid).emit('otherleave')//房间内所有人,除自己外
+		socket.to(roomid).emit('otherleave')
 		socket.leave(roomid);
 		personListMap[socket.id] = null
 		console.log('disconnect')

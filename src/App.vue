@@ -36,17 +36,17 @@
       </div>
       <div class="person-one">{{othersInfo.name}}</div>
     </div>
-  	<div :class="['call', 'bubbly-button',othersInfo ? '':'disabled']" @click="makeCall">connect</div>
+    <div v-if="full" style="color: #fff;font-size: 22px;">房间人数已满..</div>
+  	<div v-if="!full" :class="['call', 'bubbly-button',othersInfo ? '':'disabled']" @click="makeCall">Connect</div>
   </div>
 </template>
 
 <script>
-// import HelloWorld from './components/HelloWorld.vue'
-// import nickname from 'nickname'
+
 export default {
   name: 'App', 
   components: {
-    // HelloWorld
+
   },
   data(){
   	return {
@@ -57,26 +57,40 @@ export default {
 		  othersInfo:'',
   		state:'init',
   		room: "person2",
-  		showVideo: false,
-  		showJieting: false,
-  		showGuaduan: false,
-  		remoteStream:null,
-  		localStream:null,
-  		pcConfig: {
+  		showVideo: false, // 显示视频
+  		showJieting: false,// 显示接听界面
+  		showGuaduan: false,// 显示挂断界面
+  		remoteStream:null,// 本地视频流
+  		localStream:null,// 远端视频流
+      full:false,// 房间满人标志位
+  		pcConfig: {// webrtc建立点对点的对等连接需要用到iceServers，否则只能在内网局域网使用
 	  	  'iceServers': [{
-	  	    'urls': 'turn:stun.ukerd.com:3478',
+	  	    'urls': 'turn:stun.ukerd.com:3478',// 免费直接可用的iceserver列表  https://gist.github.com/yetithefoot/7592580，也可以自建
 	  	    'credential': "123456",
 	  	    'username': "lvming"
 	  	  }]
 	  	}
   	}
   },
+  watch:{
+    // 人满后页面不可点击，置灰
+    full(val){
+      if (val) {
+        document.documentElement.classList.add('gray')
+      } else {
+        document.documentElement.classList.remove('gray')
+      }
+    }
+  },
   mounted(){
+
 	let url = window.location.origin
 	if (process.env.NODE_ENV == 'development') {
 		url = 'http://localhost:3003/'
 	}
 
+
+    // 初始化socket.io
   	this.socket = io.connect(url,{
   	  path:'/rtcket'
   	});
@@ -94,7 +108,7 @@ export default {
   methods:{
   	socketMessage(){
   		this.socket.on('message', (room, id, data) => {
-  		  console.log(data)
+
   		  if (data.type == 3) {
   		    this.getCall()
   		  } else if (data.type == 7) {
@@ -103,7 +117,7 @@ export default {
   		  } else if(data.type == 4 ||data.type == 5||data.type == 6){
   		      var callData = data.data;
   		      if (callData.hasOwnProperty('type') && callData.type === 'offer') {
-  		        console.log(callData)
+
   		        this.createAnswer(callData)
   		      } else if (callData.hasOwnProperty('type') && callData.type == 'answer') {
   		        this.pc.setRemoteDescription(new RTCSessionDescription(callData));
@@ -120,42 +134,62 @@ export default {
   		      }
   		    }
   		})
-
-  		this.socket.on("joined", (r,id) => {
-
-
-  			for (var key in r) {
-  				if (r[key]) {
+      // 加入房间成功后
+  		this.socket.on("joined", (data,id) => {
+        // 设置当前用户和对方用户信息
+  			for (var key in data) {
+  				if (data[key]) {
   					if (key == id) {
-  						this.info = r[key].info
+  						this.info = data[key].info
   					} else {
-  						this.othersInfo = r[key].info
+  						this.othersInfo = data[key].info
   					}
   				}
 
   			}
-  		  console.log("joined,房间号：" + r + ", ID:" + id);
-  		});
-  		this.socket.on("leaved", (r, id) => {
-  		  console.log("leaved,房间号：" + r + ',ID:' + id);
-  		});
 
-  		this.socket.on('otherjoin', (r) => {
-  			this.othersInfo = r.info
-  		  // console.log('receive joined message:', roomid, state);
   		});
-  		this.socket.on('otherleave', (r) => {
+      // 当前用户离开房间
+  		this.socket.on("leaved", () => {
+
+  		});
+      // 其他人进入房间
+  		this.socket.on('otherjoin', (data) => {
+  			this.othersInfo = data.info
+
+  		});
+      // 其他人离开房间
+  		this.socket.on('otherleave', () => {
   			this.othersInfo = ''
-  		  // console.log('receive joined message:', roomid, state);
-  		});
+        this.leave();
 
-  		this.socket.on('full', (roomid, id) => {
-  		  console.log('receive full message', roomid, id);
-  		  this.leave();
+  		});
+      // 人满了
+  		this.socket.on('full', (roomid, rooms) => {
+
+
+        this.renderFull(rooms)
 
 
   		});
   	},
+    renderFull(rooms){
+      this.full = true;
+
+      let count = 0;
+      for (let key in rooms) {
+        if (rooms[key] && rooms[key].info && count < 2) {
+          if (count == 1) {
+
+            this.othersInfo = rooms[key].info
+          } else {
+            this.info = rooms[key].info
+          }
+          count++
+          
+        }
+      }
+    },
   	sendMessage(type, data) {
   	  this.socket.emit("message", this.room, { type: type, data: data });
   	},
@@ -175,6 +209,7 @@ export default {
         },900);
       })
     },
+    // 拨打电话
   	async makeCall(e){
       await this.animateButton(e)
   		this.state = 'call'
@@ -185,6 +220,7 @@ export default {
 
   		this.sendMessage(3, "calling")
   	},
+    // 挂断电话
   	guaduanCall(){
   		console.log('guaduanCall')
   		this.leave();
@@ -192,12 +228,14 @@ export default {
   		this.sendMessage(7,'init');
 
   	},
+    // 收到来电电话
   	getCall(){
   		console.log('getCall')
   		this.showVideo = true;
   		this.showGuaduan = false;
   		this.showJieting = true;
   	},
+    // 接听来电
   	async jietingCall(){
 
 		this.showJieting = false;
@@ -206,6 +244,7 @@ export default {
   		await this.initLocalStream()
   		await this.call()
   	},
+    // 发起点对点通信
   	async call() {
   	  const offerOptions = {
   	    offerToRecieveAudio: 1,
@@ -219,33 +258,34 @@ export default {
   	  this.sendMessage(4, desc);
 
   	},
-
+    // 初始化本地视频
   	async initLocalStream(){
   		if (!navigator.mediaDevices ||
   		  !navigator.mediaDevices.getUserMedia) {
   		  console.error('the getUserMedia is not supported!');
-  		  
+  		  alert('您的浏览器暂不支持getUserMedia，请使用Safari打开')
+
   		  return;
   		} else {
-  		  
+  		  // alert(JSON.stringify(navigator.mediaDevices.getSupportedConstraints()))
   		  const constraints = {
-  		    video: true,
+  		    video: window.navigator.userAgent.indexOf('Chrome') > -1 ? { width: {ideal:window.innerWidth}, height: {ideal:window.innerHeight} } : true,// 在移动端暂不支持width和height属性
   		    audio: {
   		      echoCancellation: true,
   		      noiseSuppression: true,
   		      autoGainControl: true
   		    }
   		  }
-  		  const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        let stream = null
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints)
+        }catch(e){
+          alert(e)
+        }
+  		  
   		  
   		  this.localStream = this.getMediaStream(stream)
 
-  		//   return new Promise(function(resolve, reject){
-
-			 //    setTimeout(function(){
-			 //        resolve("成功!"); //代码正常执行！
-			 //    }, 250);
-		  // });
   		  this.localVideo.srcObject = this.localStream;
 
   		  this.bindTracks();
@@ -300,7 +340,7 @@ export default {
 
   	      if (e.candidate) {
   	        var data = { type: 'candidate', label: event.candidate.sdpMLineIndex, id: event.candidate.sdpMid, candidate: event.candidate.candidate };
-  	        //socket.emit("message", room, { type: 6, data: data })
+
   	        this.sendMessage(6, data);
   	      } else {
   	        console.log('this is the end candidate');
