@@ -37,7 +37,7 @@
       <div class="person-one">{{othersInfo.name}}</div>
     </div>
     <div v-if="full" style="color: #fff;font-size: 22px;">房间人数已满..</div>
-  	<div v-if="!full" :class="['call', 'bubbly-button',othersInfo ? '':'disabled']" @click="makeCall">Connect</div>
+  	<div v-if="!full" :class="['call', 'bubbly-button',othersInfo ? '':'disabled']" @click="makeCall">{{othersInfo?'Connect':'等待另一个用户进入房间...'}}</div>
   </div>
 </template>
 
@@ -426,6 +426,7 @@ export default {
 	.localvideo {
 		width: 100%;
 		height: 100%;
+    object-fit: fill;
 	}
 	.remotevideo {
 		position: absolute;
@@ -433,7 +434,8 @@ export default {
 		height: 30%;
 		right: 0;
 		bottom: 0;
-		z-index: 9;
+    z-index: 9;
+    object-fit: fill;
 	}
   .avatar-wave-jieting {
     position: absolute;
@@ -496,9 +498,9 @@ export default {
     bottom: 0;
     top: 0;
     background-color: rgb(33, 26, 37);
-	display: flex;
-	justify-content: center;
-	align-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   .avatar {
     display: block;
@@ -555,10 +557,12 @@ export default {
     animation-delay: 0.24s;
   }
   .bubbly-button {
-    width: 70px;
-	height: 34px;
-	text-align: center;
-	line-height: 34px;
+    width: auto;
+    padding-left: 5px;
+    padding-right: 5px;
+    height: 34px;
+    text-align: center;
+    line-height: 34px;
 	
   }
   .bubbly-button.disabled {
