@@ -1,6 +1,6 @@
 # liveone
 
-基于WebRTC的HTML5一对一视频聊天项目，掘金文章地址：[传送门](https://juejin.cn/user/3368559356680215)。
+基于WebRTC的HTML5一对一视频聊天项目，掘金文章地址：[传送门](https://juejin.cn/post/6900832429339213837)。
 
 
 ## 项目技术栈
