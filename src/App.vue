@@ -83,6 +83,9 @@ export default {
     }
   },
   mounted(){
+    window.onerror = function(msg,url,line,col,error){
+      alert(msg)
+    }
 
 	let url = window.location.origin
 	if (process.env.NODE_ENV == 'development') {
@@ -287,6 +290,7 @@ export default {
   		  this.localStream = this.getMediaStream(stream)
 
   		  this.localVideo.srcObject = this.localStream;
+        this.localVideo.play()
 
   		  this.bindTracks();
   		}
@@ -356,6 +360,8 @@ export default {
   	  // remoteStream = e.streams[0];
   	  this.remoteStream = e.streams[0];
   	  this.remoteVideo.srcObject = this.remoteStream;
+      this.remoteVideo.play()
+
   	},
   	closePc() {
   	  if (this.pc) {
